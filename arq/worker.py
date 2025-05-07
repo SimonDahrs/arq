@@ -959,7 +959,7 @@ class Worker:
         self._last_health_check = now_ts
         pending_tasks = sum(not t.done() for t in self.tasks.values())
         if self.use_stream:
-            queued = self.pool.xlen(stream_key)
+            queued = await self.pool.xlen(stream_key)
         else:
             queued = await self.pool.zcard(self.queue_name)
         info = (
