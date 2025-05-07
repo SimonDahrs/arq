@@ -952,12 +952,16 @@ class Worker:
         job_futures and await asyncio.gather(*job_futures)
 
     async def record_health(self) -> None:
+        stream_key = self.queue_name + stream_key_suffix
         now_ts = time()
         if (now_ts - self._last_health_check) < self.health_check_interval:
             return
         self._last_health_check = now_ts
         pending_tasks = sum(not t.done() for t in self.tasks.values())
-        queued = await self.pool.zcard(self.queue_name)
+        if self.use_stream:
+            queued = self.pool.xlen(stream_key)
+        else:
+            queued = await self.pool.zcard(self.queue_name)
         info = (
             f'{datetime.now():%b-%d %H:%M:%S} j_complete={self.jobs_complete} j_failed={self.jobs_failed} '
             f'j_retried={self.jobs_retried} j_ongoing={pending_tasks} queued={queued}'
